@@ -3369,6 +3369,30 @@ public final class Settings {
          */
         public static final String QUIET_HOURS_DIM = "quiet_hours_dim";
 
+        /**
+         * Whether or not to show the clean all button in the recents panel
+         * @hide
+         */
+        public static final String CLEAR_ALL_SHOW = "clear_all_show";
+
+        /**
+         * Whether or not to show the RAM bar in the recents panel
+         * @hide
+         */
+        public static final String RAM_BAR_SHOW = "ram_bar_show";
+
+        /**
+         * RAM bar left hand side color
+         * @hide
+         */
+        public static final String RAM_BAR_COLOR_LEFT = "rambar_color_left";
+
+        /**
+         * RAM bar right hand side color
+         * @hide
+         */
+        public static final String RAM_BAR_COLOR_RIGHT = "rambar_color_right";
+
          /**
          * Action for long-pressing back button on lock screen
          * @hide

@@ -78,6 +78,12 @@
                 android:src="@drawable/ic_recents_clear" />
         </LinearLayout>
 
+        <include 
+            layout="@layout/rambar_view"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|right"/>
+
     </FrameLayout>
 
     <include layout="@layout/status_bar_no_recent_apps"
