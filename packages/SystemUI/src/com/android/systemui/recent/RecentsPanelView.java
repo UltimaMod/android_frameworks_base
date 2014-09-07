@@ -35,6 +35,7 @@ import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
+import android.database.ContentObserver;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
@@ -49,6 +50,8 @@ import android.os.UserHandle;
 import android.provider.Settings;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.util.TypedValue;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.MotionEvent;
@@ -65,6 +68,7 @@ import android.widget.BaseAdapter;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.ImageView.ScaleType;
+import android.widget.LinearLayout;
 import android.widget.PopupMenu;
 import android.widget.TextView;
 
@@ -393,6 +397,7 @@ implements OnItemClickListener, RecentsCallback,
                 mClearRecents.setVisibility(View.GONE);
             }
 
+            setupClearAll();
             onAnimationEnd(null);
             setFocusable(true);
             setFocusableInTouchMode(true);
@@ -412,6 +417,39 @@ implements OnItemClickListener, RecentsCallback,
                 Settings.Secure.PROTECTED_COMPONENTS);
         protectedComponents = protectedComponents == null ? "" : protectedComponents;
         return (protectedComponents.equals(""));
+
+    private void setupClearAll(){
+        int clearAllPosition = Settings.System.getInt(
+                mContext.getContentResolver(), Settings.System.CLEAR_ALL_POSITION, 0);
+        boolean ramBarEnabled = Settings.System.getInt(
+                mContext.getContentResolver(), Settings.System.RAM_BAR_SHOW, 0) != 0;
+        int ramBarPosition = Settings.System.getInt(
+                mContext.getContentResolver(), Settings.System.RAM_BAR_POSITION, 1);
+        FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
+                LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+        
+        if(clearAllPosition != 0){
+            params.gravity= Gravity.RIGHT | Gravity.BOTTOM;
+            if(ramBarEnabled && ramBarPosition != 0){
+               params.bottomMargin = applyDensityPixel(15); 
+            } 
+        }
+        else {
+            params.gravity= Gravity.RIGHT | Gravity.TOP;
+            if(ramBarEnabled && ramBarPosition == 0){
+                params.topMargin = applyDensityPixel(45);
+            } else {
+                params.topMargin = applyDensityPixel(15);
+            }
+        }
+                    
+        params.height = params.width = applyDensityPixel(50);
+        mClearRecents.setLayoutParams(params);
+    }
+    
+    private int applyDensityPixel(int input){
+        return (int) TypedValue.applyDimension(
+                TypedValue.COMPLEX_UNIT_DIP, input, mContext.getResources().getDisplayMetrics());
     }
 
     protected void onAttachedToWindow () {
@@ -967,11 +1005,6 @@ implements OnItemClickListener, RecentsCallback,
             bottom += getBottomPaddingOffset();
         }
         mRecentsContainer.drawFadedEdges(canvas, left, right, top, bottom);
-    }
-    
-    private int pxToDp(int px, Context context) {
-        float d = context.getResources().getDisplayMetrics().density;
-        return (int)(px * d);
     }
 
     private static boolean isTablet(Context context) {

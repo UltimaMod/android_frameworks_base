@@ -3376,10 +3376,21 @@ public final class Settings {
         public static final String CLEAR_ALL_SHOW = "clear_all_show";
 
         /**
+         * Whether or not to show the clean all button in the recents panel
+         * @hide
+         */
+        public static final String CLEAR_ALL_POSITION = "clear_all_position";
+
+        /**
          * Whether or not to show the RAM bar in the recents panel
          * @hide
          */
         public static final String RAM_BAR_SHOW = "ram_bar_show";
+        /**
+         * Whether or not to show the clean all button in the recents panel
+         * @hide
+         */
+        public static final String RAM_BAR_POSITION = "ram_bar_position";
 
         /**
          * RAM bar left hand side color

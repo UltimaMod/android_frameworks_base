@@ -69,15 +69,17 @@
                 android:scaleType="center"
                 android:src="@drawable/ic_protected_apps" />
 
-            <ImageView
-                android:id="@+id/recents_clear"
-                android:clickable="true"
-                android:layout_width="50dp"
-                android:layout_height="50dp"
-                android:scaleType="center"
-                android:src="@drawable/ic_recents_clear" />
         </LinearLayout>
 
+        <ImageView
+             android:id="@+id/recents_clear"
+             android:clickable="true"
+             android:layout_width="50dp"
+             android:layout_height="50dp"
+             android:scaleType="center"
+             android:layout_marginTop="20dp"
+             android:src="@drawable/ic_recents_clear" />
+        
         <include 
             layout="@layout/rambar_view"
             android:layout_width="match_parent"
