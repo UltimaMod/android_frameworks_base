@@ -17,21 +17,16 @@
 package com.android.systemui.statusbar.policy;
 
 import android.app.ActivityManagerNative;
-import android.content.ContentResolver;
 import android.app.StatusBarManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.database.ContentObserver;
-import android.net.Uri;
 import android.os.Bundle;
-import android.os.Handler;
 import android.provider.AlarmClock;
 import android.provider.Settings;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
-import android.text.TextUtils;
 import android.text.format.DateFormat;
 import android.text.style.CharacterStyle;
 import android.text.style.RelativeSizeSpan;
@@ -47,16 +42,15 @@ import com.android.internal.R;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
 
 import libcore.icu.LocaleData;
 
 /**
- * Digital clock for the status bar.
+ * Digital clock for the status bar expanded header.
  */
-public class Clock extends TextView implements DemoMode, OnClickListener, OnLongClickListener {
+public class ClockExpanded extends TextView implements DemoMode, OnClickListener, OnLongClickListener {
     private boolean mAttached;
     private boolean mReceiverRegistered;
     private Calendar mCalendar;
@@ -68,21 +62,17 @@ public class Clock extends TextView implements DemoMode, OnClickListener, OnLong
     private static final int AM_PM_STYLE_SMALL   = 1;
     private static final int AM_PM_STYLE_GONE    = 2;
 
-    private static final int DOW_STYLE_NORMAL  = 0;
-    private static final int DOW_STYLE_SMALL   = 1;
-    private static final int DOW_STYLE_GONE    = 2;
+    private static final int AM_PM_STYLE = AM_PM_STYLE_GONE;
 
-    SettingsObserver observer = new SettingsObserver(new Handler());
-
-    public Clock(Context context) {
+    public ClockExpanded(Context context) {
         this(context, null);
     }
 
-    public Clock(Context context, AttributeSet attrs) {
+    public ClockExpanded(Context context, AttributeSet attrs) {
         this(context, attrs, 0);
     }
 
-    public Clock(Context context, AttributeSet attrs, int defStyle) {
+    public ClockExpanded(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
 
         if (isClickable()) {
@@ -103,11 +93,9 @@ public class Clock extends TextView implements DemoMode, OnClickListener, OnLong
             filter.addAction(Intent.ACTION_USER_SWITCHED);
 
             getContext().registerReceiver(mIntentReceiver, filter, null, getHandler());
-            observer.observe();
             mReceiverRegistered = true;
         } else if (!shouldBeRegistered && mReceiverRegistered) {
             getContext().unregisterReceiver(mIntentReceiver);
-            observer.release();   
             mReceiverRegistered = false;
         }
     }
@@ -169,77 +157,15 @@ public class Clock extends TextView implements DemoMode, OnClickListener, OnLong
     };
 
     final void updateClock() {
-        Date now = new Date();
-        Context context = getContext();
-        Locale locale = Locale.getDefault();
-
-        int textColor = Settings.System.getInt(context.getContentResolver(), Settings.System.STATUS_BAR_CLOCK_COLOR, 0xFFFFFFFF);
-        CharSequence weekday = getDayOfWeek(now, locale);
-        CharSequence smallTime = getSmallTime(now, locale); 
-        CharSequence amPm = getAmPm(now, locale);    
-        CharSequence time = TextUtils.concat(weekday, smallTime, amPm);
-        
-        setText(time);
-        setTextColor(textColor);
-    }
-
-    private CharSequence getDayOfWeek(Date date, Locale locale){  
-        Context context = getContext();
-        int dowStyle = Settings.System.getInt(context.getContentResolver(), Settings.System.STATUS_BAR_DOW, 2); 
-
-        if(dowStyle != DOW_STYLE_GONE){
-            String day = new SimpleDateFormat("EEE", locale).format(date) + " ";
-            if (dowStyle == DOW_STYLE_NORMAL){
-                return day;
-            } else {
-                SpannableStringBuilder formatted = new SpannableStringBuilder(day);
-                CharacterStyle style = new RelativeSizeSpan(0.7f);
-                formatted.setSpan(style, 0, (day.length() - 1), Spannable.SPAN_EXCLUSIVE_INCLUSIVE);
-                return formatted;
-            }
-        }
-        return "";
-    }
-
-    private CharSequence getAmPm(Date date, Locale locale){
-        Context context = getContext();
-        boolean is24 = DateFormat.is24HourFormat(context);
-        int amPmStyle = Settings.System.getInt(context.getContentResolver(), Settings.System.STATUS_BAR_AM_PM, 2);
-
-        if(is24){
-            return "";
-        } else if (amPmStyle != AM_PM_STYLE_GONE){
-            String amPM = " " + new SimpleDateFormat("a", locale).format(date);
-            if (amPmStyle == AM_PM_STYLE_NORMAL){
-                return amPM;
-            } else {
-                SpannableStringBuilder formatted = new SpannableStringBuilder(amPM);
-                CharacterStyle style = new RelativeSizeSpan(0.7f);
-                formatted.setSpan(style, 0, 3, Spannable.SPAN_EXCLUSIVE_INCLUSIVE);
-                return formatted;
-            }
-        }
-        return "";
-    }
-
-    private CharSequence getSmallTime(Date date, Locale locale) {
-        Context context = getContext();
-        boolean is24 = DateFormat.is24HourFormat(context);
-        String time;      
-        
-        if(is24){
-            time = new SimpleDateFormat("HH:mm", locale).format(date);
-        } else {
-            time = new SimpleDateFormat("h:mm", locale).format(date);
-        }     
-        return time;
+        if (mDemoMode) return;
+        mCalendar.setTimeInMillis(System.currentTimeMillis());
+        setText(getSmallTime());
     }
 
     private final CharSequence getSmallTime() {
         Context context = getContext();
         boolean is24 = DateFormat.is24HourFormat(context);
         LocaleData d = LocaleData.get(context.getResources().getConfiguration().locale);
-        int amPmStyle = Settings.System.getInt(context.getContentResolver(), Settings.System.STATUS_BAR_AM_PM, 2);
 
         final char MAGIC1 = '\uEF00';
         final char MAGIC2 = '\uEF01';
@@ -252,7 +178,7 @@ public class Clock extends TextView implements DemoMode, OnClickListener, OnLong
              * add dummy characters around it to let us find it again after
              * formatting and change its size.
              */
-            if (amPmStyle != AM_PM_STYLE_NORMAL) {
+            if (AM_PM_STYLE != AM_PM_STYLE_NORMAL) {
                 int a = -1;
                 boolean quoted = false;
                 for (int i = 0; i < format.length(); i++) {
@@ -284,15 +210,15 @@ public class Clock extends TextView implements DemoMode, OnClickListener, OnLong
         }
         String result = sdf.format(mCalendar.getTime());
 
-        if (amPmStyle != AM_PM_STYLE_NORMAL) {
+        if (AM_PM_STYLE != AM_PM_STYLE_NORMAL) {
             int magic1 = result.indexOf(MAGIC1);
             int magic2 = result.indexOf(MAGIC2);
             if (magic1 >= 0 && magic2 > magic1) {
                 SpannableStringBuilder formatted = new SpannableStringBuilder(result);
-                if (amPmStyle == AM_PM_STYLE_GONE) {
+                if (AM_PM_STYLE == AM_PM_STYLE_GONE) {
                     formatted.delete(magic1, magic2+1);
                 } else {
-                    if (amPmStyle == AM_PM_STYLE_SMALL) {
+                    if (AM_PM_STYLE == AM_PM_STYLE_SMALL) {
                         CharacterStyle style = new RelativeSizeSpan(0.7f);
                         formatted.setSpan(style, magic1, magic2,
                                           Spannable.SPAN_EXCLUSIVE_INCLUSIVE);
@@ -370,31 +296,4 @@ public class Clock extends TextView implements DemoMode, OnClickListener, OnLong
             setText(getSmallTime());
         }
     }
-
-    class SettingsObserver extends ContentObserver {
-        ContentResolver resolver;
-        SettingsObserver(Handler handler) {
-            super(handler);
-            resolver = mContext.getContentResolver();
-        }
- 
-        public void observe() {           
-            Uri clockColourUri = Settings.System.getUriFor(Settings.System.STATUS_BAR_CLOCK_COLOR);
-            Uri clockDowUri = Settings.System.getUriFor(Settings.System.STATUS_BAR_DOW);
-            Uri clockAmPmUri = Settings.System.getUriFor(Settings.System.STATUS_BAR_AM_PM);
-            resolver.registerContentObserver(clockColourUri, false, this);
-            resolver.registerContentObserver(clockDowUri, false, this);
-            resolver.registerContentObserver(clockAmPmUri, false, this);
-        }
-        
-        public void release() {
-            resolver.unregisterContentObserver(this);
-        }
- 
-        @Override
-        public void onChange(boolean selfChange) {
-            updateClock();
-        }
-    }
 }
-

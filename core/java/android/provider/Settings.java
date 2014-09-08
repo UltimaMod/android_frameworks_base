@@ -3146,6 +3146,16 @@ public final class Settings {
         public static final String STATUS_BAR_AM_PM = "status_bar_am_pm";
 
         /**
+         * Display style of Day of the Week next to clock in status bar
+         * 0: Normal display
+         * 1: Small display
+         * 2: No display
+         * default: 2
+         * @hide
+         */
+        public static final String STATUS_BAR_DOW = "status_bar_dow";
+
+        /**
          * Display style of the status bar battery information
          * 0: Display the battery an icon in portrait mode
          * 2: Display the battery as a circle
@@ -3175,6 +3185,13 @@ public final class Settings {
          * @hide
          */
         public static final String STATUS_BAR_CLOCK = "status_bar_clock";
+
+        /**
+         * Change the color of the status bar clock
+         * default: 1
+         * @hide
+         */
+        public static final String STATUS_BAR_CLOCK_COLOR = "status_bar_clock_color";
 
         /**
          * Whether to show the signal text or signal bars.
