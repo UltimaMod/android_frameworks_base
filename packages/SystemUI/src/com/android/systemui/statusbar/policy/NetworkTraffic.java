@@ -105,6 +105,8 @@ public class NetworkTraffic extends TextView {
             long newTotalTxBytes = TrafficStats.getTotalTxBytes();
             long rxData = newTotalRxBytes - totalRxBytes;
             long txData = newTotalTxBytes - totalTxBytes;
+            long newRxBytes = TrafficStats.getTotalRxBytes() - totalRxBytes;
+            long newTxBytes = TrafficStats.getTotalTxBytes() - totalTxBytes;
 
             // If bit/s convert from Bytes to bits
             String symbol;
@@ -122,8 +124,8 @@ public class NetworkTraffic extends TextView {
 
                 String hexColor = String.format("#%06X", (0xFFFFFF & mColorUp));
                 output = "<font color='" + hexColor + "'>";
-                output += mTextEnabled ? formatOutput(timeDelta, txData, symbol) + " U" 
-                        : formatOutput(timeDelta, txData, symbol); 
+                output += formatOutput(timeDelta, txData, symbol); 
+                output += mTextEnabled ? " U" : ""; 
                 output += "</font>";
             }
 
@@ -140,18 +142,45 @@ public class NetworkTraffic extends TextView {
             if (isSet(mState, MASK_DOWN)) {
                 String hexColor = String.format("#%06X", (0xFFFFFF & mColorDown));
                 output += "<font color='" + hexColor + "'>";
-                output += mTextEnabled ? formatOutput(timeDelta, rxData, symbol) + " D" 
-                        : formatOutput(timeDelta, rxData, symbol); 
+                output += formatOutput(timeDelta, rxData, symbol);
+                output += mTextEnabled ? " D" : ""; 
                 output += "</font>";
             }
+
             setTextSize(TypedValue.COMPLEX_UNIT_PX, (float)textSize);
             
             if(mHideInactivity){
-                if(getText().equals(output)){
-                    setVisibility(View.GONE);
-                } else {
-                    setVisibility(View.VISIBLE);
-                    setText(Html.fromHtml(output));
+                switch (mState){
+                    case 0:
+                        setVisibility(View.GONE);
+                        break;
+                    case 1:
+                        if(newTxBytes == 0){
+                            setVisibility(View.GONE);
+                        } else {
+                            setVisibility(View.VISIBLE);
+                            setText(Html.fromHtml(output));
+                        }
+                        break;
+                    case 2:
+                        if(newRxBytes == 0){
+                            setVisibility(View.GONE);
+                        } else {
+                            setVisibility(View.VISIBLE);
+                            setText(Html.fromHtml(output));
+                        }
+                        break;
+                    case 3:
+                        if(newRxBytes == 0 && newTxBytes == 0){
+                            setVisibility(View.GONE);
+                        } else {
+                            setVisibility(View.VISIBLE);
+                            setText(Html.fromHtml(output));
+                        }
+                        break;
+                    default:
+                        setVisibility(View.GONE);
+                        break;
                 }
             } else {
                 setVisibility(View.VISIBLE);                
