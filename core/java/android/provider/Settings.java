@@ -2618,6 +2618,63 @@ public final class Settings {
         public static final String NOTIFICATION_LIGHT_PULSE_CUSTOM_VALUES = "notification_light_pulse_custom_values";
 
         /**
+         * The state of the network meter
+         * 1: Uploads only
+         * 2: Downloads only
+         * 3: Uploads and Downloads
+         * @hide
+         */
+        public static final String NETWORK_TRAFFIC_STATE = "network_traffic_meter";
+
+        /**
+         * Show the upload/download icon next to the meter
+         * @hide
+         */
+        public static final String NETWORK_TRAFFIC_ICON = "network_traffic_icon";
+
+        /**
+         * Show an U, D or U and D next to the meter
+         * @hide
+         */
+        public static final String NETWORK_TRAFFIC_TEXT = "network_traffic_text";
+
+        /**
+         * Change the color of the traffic meter upload text
+         * @hide
+         */
+        public static final String NETWORK_TRAFFIC_COLOR_UP = "network_traffic_color_up";
+
+        /**
+         * Change the color of the traffic meter download text
+         * @hide
+         */
+        public static final String NETWORK_TRAFFIC_COLOR_DOWN = "network_traffic_color_down";
+
+        /**
+         * Change the color of the traffic meter icon
+         * @hide
+         */
+        public static final String NETWORK_TRAFFIC_COLOR_ICON = "network_traffic_color_icon";
+
+        /**
+         * Hide the network meter and disable it from measuring
+         * @hide
+         */
+        public static final String NETWORK_TRAFFIC_HIDE = "network_traffic_hide";
+
+        /**
+         * Change the units used in the network meter
+         * @hide
+         */
+        public static final String NETWORK_TRAFFIC_UNIT = "network_traffic_unit";
+
+        /**
+         * Change how often the network meter is updated
+         * @hide
+         */
+        public static final String NETWORK_TRAFFIC_INTERVAL = "network_traffic_interval";
+
+        /**
          * Whether the battery light should be enabled (if hardware supports it)
          * The value is boolean (1 or 0).
          * @hide
