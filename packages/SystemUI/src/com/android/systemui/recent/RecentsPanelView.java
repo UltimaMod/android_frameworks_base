@@ -390,7 +390,7 @@ implements OnItemClickListener, RecentsCallback,
             mProtectedApps.setVisibility(noProtectedApps() ? View.GONE : View.VISIBLE);
 
             boolean mShowClearAll = Settings.System.getInt(
-                    mContext.getContentResolver(), Settings.System.CLEAR_ALL_SHOW, 0) != 0;
+                    mContext.getContentResolver(), Settings.System.CLEAR_ALL_SHOW, 1) != 0;
             if(mShowClearAll){
                 mClearRecents.setVisibility(noApps ? View.GONE : View.VISIBLE);
             } else{
