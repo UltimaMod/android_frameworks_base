@@ -3231,6 +3231,107 @@ public final class Settings {
          */
         public static final String STATUS_BAR_BATTERY_SHOW_PERCENT =
                 "status_bar_battery_show_percent";
+        
+        /**
+         * The default color for the status bar battery and the color for when it is high charge
+         * default: #ffffff
+         * @hide
+         */
+        public static final String STATUS_BAR_BATTERY_COLOR =
+                "status_bar_battery_color";
+        
+        /**
+         * The color for when the status bar battery is medium charge
+         * default: #ff3300
+         * @hide
+         */
+        public static final String STATUS_BAR_BATTERY_COLOR_LOW =
+                "status_bar_battery_color_low";
+        
+        /**
+         * The color for when the status bar battery is low charge
+         * default: #ff3300
+         * @hide
+         */
+        public static final String STATUS_BAR_BATTERY_COLOR_CRIT =
+                "status_bar_battery_color_crit";
+        
+        /**
+         * The color of the battery text when the charge is sub-40%
+         * default: #ffffff
+         * @hide
+         */
+        public static final String STATUS_BAR_BATTERY_TEXT_COLOR_LOW =
+                "status_bar_battery_text_color_low";
+        
+        /**
+         * Whether to use the sub-40% battery color
+         * default: false
+         * @hide
+         */
+        public static final String USE_BATTERY_TEXT_COLOR_LOW =
+                "use_battery_text_color_low";
+        
+        /**
+         * The color for the status bar battery text
+         * default: #ffffff
+         * @hide
+         */
+        public static final String STATUS_BAR_BATTERY_TEXT_COLOR =
+                "status_bar_battery_text_color";
+        
+        /**
+         * The color for when the battery is charging
+         * default: #ffffff
+         * @hide
+         */
+        public static final String STATUS_BAR_BATTERY_CHARGE_COLOR =
+                "status_bar_battery_charge_color";
+        
+        /**
+         * The color for the battery background
+         * default: #66ffffff
+         * @hide
+         */
+        public static final String STATUS_BAR_BATTERY_BACK_COLOR =
+                "status_bar_battery_back_color";
+        
+        /**
+         * The color for when the battery bolt color (portrait or landscape only)
+         * default: #b2000000
+         * @hide
+         */
+        public static final String STATUS_BAR_BATTERY_BOLT_COLOR =
+                "status_bar_battery_bolt_color";
+        
+        /**
+         * The style of the battery text font
+         * 0: Condensed
+         * 1: Normal
+         * 2: Bold
+         * default: 1
+         * @hide
+         */
+        public static final String STATUS_BAR_BATTERY_FONT =
+                "status_bar_battery_font";
+        
+        /**
+         * The level at which the battery reports as low, and will change
+         * color accordingly
+         * default: 4
+         * @hide
+         */
+        public static final String STATUS_BAR_BATTERY_LEVEL_CRIT =
+                "status_bar_battery_level_crit";
+        
+        /**
+         * The level at which the battery reports as medium, and will change
+         * color accordingly
+         * default: 15
+         * @hide
+         */
+        public static final String STATUS_BAR_BATTERY_LEVEL_LOW =
+                "status_bar_battery_level_low";
 
         /**
          * Whether to hide the clock, show it in the default

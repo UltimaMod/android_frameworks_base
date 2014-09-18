@@ -17,11 +17,13 @@
 package com.android.systemui;
 
 import android.content.BroadcastReceiver;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
+import android.database.ContentObserver;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
@@ -30,10 +32,12 @@ import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Typeface;
+import android.net.Uri;
 import android.os.BatteryManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.provider.Settings;
+import android.provider.Settings.SettingNotFoundException;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
 import android.view.View;
@@ -148,6 +152,20 @@ public class BatteryMeterView extends View implements DemoMode {
             invalidateIfVisible();
         }
     };
+    
+    ContentObserver mSettingsObserver = new ContentObserver(new Handler()) {
+        @Override
+        public void onChange(boolean selfChange) {
+            updateSettings();
+            invalidateIfVisible();
+        }
+
+        @Override
+        public void onChange(boolean selfChange, Uri uri) {
+            updateSettings();
+            invalidateIfVisible();
+        }
+    };
 
     private final Handler mHandler;
 
@@ -158,10 +176,26 @@ public class BatteryMeterView extends View implements DemoMode {
     private int mHeight;
     private int mWidth;
 
-    final int[] mColors;
+    private int[] mColors;
+    
+    private int mTextColor;
+    private int mTextColorForty;
+    
+    private int mBatteryColorCrit;
+    private int mBatteryColorLow;
+    private int mBatteryColor;   
+    private int mLevelCrit;
+    private int mLevelLow;
+    
+    private int mBackColor;
+    private int mBoltColor;
+    
+    private Typeface mFont;
 
     private String mWarningString;
-    private final int mChargeColor;
+    private int mChargeColor;
+    
+    private int mAllowForty;
 
     protected boolean mDemoMode;
     protected BatteryTracker mDemoTracker = new BatteryTracker();
@@ -182,6 +216,7 @@ public class BatteryMeterView extends View implements DemoMode {
             mTracker.onReceive(getContext(), sticky);
         }
 
+        registerObservers();
         mAttached = true;
     }
 
@@ -191,6 +226,7 @@ public class BatteryMeterView extends View implements DemoMode {
 
         mAttached = false;
         getContext().unregisterReceiver(mTracker);
+        getContext().getContentResolver().unregisterContentObserver(mSettingsObserver);
     }
 
     public BatteryMeterView(Context context) {
@@ -204,23 +240,8 @@ public class BatteryMeterView extends View implements DemoMode {
     public BatteryMeterView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
         mHandler = new Handler();
-
-        final Resources res = context.getResources();
-        TypedArray levels = res.obtainTypedArray(R.array.batterymeter_color_levels);
-        TypedArray colors = res.obtainTypedArray(R.array.batterymeter_color_values);
-
-        final int N = levels.length();
-        mColors = new int[2*N];
-        for (int i=0; i<N; i++) {
-            mColors[2*i] = levels.getInt(i, 0);
-            mColors[2*i+1] = colors.getColor(i, 0);
-        }
-        levels.recycle();
-        colors.recycle();
-        mShowPercent = ENABLE_PERCENT && 0 != Settings.System.getInt(
-                context.getContentResolver(), "status_bar_show_battery_percent", 0);
-
-        mChargeColor = getResources().getColor(R.color.batterymeter_charge_color);
+        
+        updateSettings();
 
         mWarningString = context.getString(R.string.battery_meter_very_low_overlay_symbol);
 
@@ -271,6 +292,93 @@ public class BatteryMeterView extends View implements DemoMode {
             if (mBatteryMeterDrawable != null) {
                 mBatteryMeterDrawable.onSizeChanged(w, h, oldw, oldh);
             }
+        }
+    }
+    
+    private void registerObservers() {
+        ContentResolver resolver = getContext().getContentResolver();
+        resolver.registerContentObserver(
+                Settings.System.getUriFor(Settings.System.STATUS_BAR_BATTERY_COLOR_LOW), false, mSettingsObserver);
+        resolver.registerContentObserver(
+                Settings.System.getUriFor(Settings.System.STATUS_BAR_BATTERY_COLOR_CRIT), false, mSettingsObserver);
+        resolver.registerContentObserver(
+                Settings.System.getUriFor(Settings.System.STATUS_BAR_BATTERY_COLOR), false, mSettingsObserver);
+        resolver.registerContentObserver(
+                Settings.System.getUriFor(Settings.System.STATUS_BAR_BATTERY_LEVEL_CRIT), false, mSettingsObserver);
+        resolver.registerContentObserver(
+                Settings.System.getUriFor(Settings.System.STATUS_BAR_BATTERY_LEVEL_LOW), false, mSettingsObserver);
+        resolver.registerContentObserver(
+                Settings.System.getUriFor(Settings.System.STATUS_BAR_BATTERY_SHOW_PERCENT), false, mSettingsObserver);
+        resolver.registerContentObserver(
+                Settings.System.getUriFor(Settings.System.STATUS_BAR_BATTERY_TEXT_COLOR), false, mSettingsObserver);
+        resolver.registerContentObserver(
+                Settings.System.getUriFor(Settings.System.STATUS_BAR_BATTERY_TEXT_COLOR_LOW), false, mSettingsObserver);
+        resolver.registerContentObserver(
+                Settings.System.getUriFor(Settings.System.STATUS_BAR_BATTERY_BACK_COLOR), false, mSettingsObserver);
+        resolver.registerContentObserver(
+                Settings.System.getUriFor(Settings.System.STATUS_BAR_BATTERY_FONT), false, mSettingsObserver);
+        resolver.registerContentObserver(
+                Settings.System.getUriFor(Settings.System.STATUS_BAR_BATTERY_CHARGE_COLOR), false, mSettingsObserver);
+        resolver.registerContentObserver(
+                Settings.System.getUriFor(Settings.System.STATUS_BAR_BATTERY_BOLT_COLOR), false, mSettingsObserver);
+        resolver.registerContentObserver(
+                Settings.System.getUriFor(Settings.System.USE_BATTERY_TEXT_COLOR_LOW), false, mSettingsObserver);
+        updateSettings();
+        
+    }
+    
+    private void updateSettings(){
+        int fontType = 0;
+        ContentResolver resolver = getContext().getContentResolver();
+        
+        mTextColorForty = Settings.System.getInt(resolver, Settings.System.STATUS_BAR_BATTERY_TEXT_COLOR_LOW, 0xFFFFFFFF);
+        mTextColor = Settings.System.getInt(resolver, Settings.System.STATUS_BAR_BATTERY_TEXT_COLOR, 0xFF000000);
+        
+        try {
+            fontType = Settings.System.getInt(resolver, Settings.System.STATUS_BAR_BATTERY_FONT);
+            mAllowForty = Settings.System.getInt(resolver, Settings.System.USE_BATTERY_TEXT_COLOR_LOW);
+        } catch (SettingNotFoundException e) {
+            mFont = Typeface.create("sans-serif-condensed", Typeface.NORMAL);
+            mAllowForty = 0;
+            e.printStackTrace();
+        }
+        
+        switch(fontType)
+        {
+            case 0:
+                mFont = Typeface.create("sans-serif-condensed", Typeface.NORMAL);
+                break;
+            case 1:
+                mFont = Typeface.create("sans-serif", Typeface.NORMAL);
+                break;
+            case 2:
+                mFont = Typeface.create("sans-serif", Typeface.BOLD);
+                break;
+            default:
+                mFont = Typeface.create("sans-serif-condensed", Typeface.NORMAL);
+                break;
+        }
+        
+        mBatteryColorCrit = Settings.System.getInt(resolver, Settings.System.STATUS_BAR_BATTERY_COLOR_CRIT, 0xFFFF3300);
+        mBatteryColorLow = Settings.System.getInt(resolver, Settings.System.STATUS_BAR_BATTERY_COLOR_LOW, 0xFFFF3300);
+        mBatteryColor = Settings.System.getInt(resolver, Settings.System.STATUS_BAR_BATTERY_COLOR, 0xFFFFFFFF);        
+        mLevelCrit = Settings.System.getInt(resolver, Settings.System.STATUS_BAR_BATTERY_LEVEL_CRIT, 4);
+        mLevelLow = Settings.System.getInt(resolver, Settings.System.STATUS_BAR_BATTERY_LEVEL_LOW, 15);
+        
+        mShowPercent = ENABLE_PERCENT && 0 != Settings.System.getInt(resolver, Settings.System.STATUS_BAR_BATTERY_SHOW_PERCENT, 0);
+
+        mChargeColor = Settings.System.getInt(resolver, Settings.System.STATUS_BAR_BATTERY_CHARGE_COLOR, 0xFFFFFFFF);
+        mBackColor = Settings.System.getInt(resolver, Settings.System.STATUS_BAR_BATTERY_BACK_COLOR, 0x66FFFFFF);
+        mBoltColor = Settings.System.getInt(resolver, Settings.System.STATUS_BAR_BATTERY_BOLT_COLOR, 0xB2000000);
+        
+        int [] customLevels = { mLevelCrit, mLevelLow, 100 };
+        int [] customColors = { mBatteryColorCrit, mBatteryColorLow, mBatteryColor };
+        
+        final int N = customLevels.length;
+        mColors = new int[2*N];
+        for (int i=0; i<N; i++) {
+            mColors[2*i] = customLevels[i];
+            mColors[2*i+1] = customColors[i];
         }
     }
 
@@ -381,7 +489,8 @@ public class BatteryMeterView extends View implements DemoMode {
         public static final boolean SHOW_100_PERCENT = false;
 
         public static final int FULL = 96;
-        public static final int EMPTY = 4;
+        public static final int EMPTY = 4;        
+        public static final int FORTY = 40;
 
         public static final float SUBPIXEL = 0.4f;  // inset rects for softer edges
 
@@ -407,7 +516,6 @@ public class BatteryMeterView extends View implements DemoMode {
             mDisposed = false;
 
             mFramePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-            mFramePaint.setColor(res.getColor(R.color.batterymeter_frame_color));
             mFramePaint.setDither(true);
             mFramePaint.setStrokeWidth(0);
             mFramePaint.setStyle(Paint.Style.FILL_AND_STROKE);
@@ -418,21 +526,17 @@ public class BatteryMeterView extends View implements DemoMode {
             mBatteryPaint.setStrokeWidth(0);
             mBatteryPaint.setStyle(Paint.Style.FILL_AND_STROKE);
 
-            mTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-            mTextPaint.setColor(res.getColor(R.color.batterymeter_bolt_color));
-            Typeface font = Typeface.create("sans-serif-condensed", Typeface.BOLD);
-            mTextPaint.setTypeface(font);
+            mTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);   
             mTextPaint.setTextAlign(Paint.Align.CENTER);
 
             mWarningTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
             mWarningTextPaint.setColor(mColors[1]);
-            font = Typeface.create("sans-serif", Typeface.BOLD);
+            Typeface font = Typeface.create("sans-serif", Typeface.BOLD);
             mWarningTextPaint.setTypeface(font);
             mWarningTextPaint.setTextAlign(Paint.Align.CENTER);
 
             mBoltPaint = new Paint();
-            mBoltPaint.setAntiAlias(true);
-            mBoltPaint.setColor(res.getColor(R.color.batterymeter_bolt_color));
+            mBoltPaint.setAntiAlias(true);           
             mBoltPoints = loadBoltPoints(res);
         }
 
@@ -443,6 +547,15 @@ public class BatteryMeterView extends View implements DemoMode {
             final int level = tracker.level;
 
             if (level == BatteryTracker.UNKNOWN_LEVEL) return;
+            
+            if(mTracker.level <= FORTY && mAllowForty != 0){      
+                mTextPaint.setColor(mTextColorForty);
+            } else {
+                mTextPaint.setColor(mTextColor);
+            }
+            mFramePaint.setColor(mBackColor);
+            mBoltPaint.setColor(mBoltColor);
+            mTextPaint.setTypeface(mFont);
 
             float drawFrac = (float) level / 100f;
             final int pt = getPaddingTop() + (mHorizontal ? (int)(mHeight * 0.20f) : 0);
@@ -635,9 +748,7 @@ public class BatteryMeterView extends View implements DemoMode {
             mDisposed = false;
 
             mTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-            mTextPaint.setColor(res.getColor(R.color.status_bar_clock_color));
-            Typeface font = Typeface.create("sans-serif-condensed", Typeface.NORMAL);
-            mTextPaint.setTypeface(font);
+            
             mTextPaint.setTextAlign(Paint.Align.CENTER);
 
             mFrontPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -647,7 +758,7 @@ public class BatteryMeterView extends View implements DemoMode {
             mFrontPaint.setStyle(Paint.Style.STROKE);
 
             mBackPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-            mBackPaint.setColor(res.getColor(R.color.batterymeter_frame_color));
+            
             mBackPaint.setStrokeCap(Paint.Cap.BUTT);
             mBackPaint.setDither(true);
             mBackPaint.setStrokeWidth(0);
@@ -656,7 +767,7 @@ public class BatteryMeterView extends View implements DemoMode {
 
             mBoltPaint = new Paint();
             mBoltPaint.setAntiAlias(true);
-            mBoltPaint.setColor(getColorForLevel(50));
+            
             mBoltPoints = loadBoltPoints(res);
         }
 
@@ -667,7 +778,11 @@ public class BatteryMeterView extends View implements DemoMode {
             if (mRectLeft == null) {
                 initSizeBasedStuff();
             }
-
+            mTextPaint.setColor(mTextColor);
+            mTextPaint.setTypeface(mFont);
+            mBackPaint.setColor(mBackColor);
+            mBoltPaint.setColor(mBoltColor);
+            
             updateChargeAnim(tracker);
             drawCircle(c, tracker, mTextX, mRectLeft);
         }
@@ -754,7 +869,7 @@ public class BatteryMeterView extends View implements DemoMode {
                 canvas.drawPath(mBoltPath, mBoltPaint);
 
             } else if (level < 100 && mShowPercent) {
-                mTextPaint.setColor(paint.getColor());
+                mTextPaint.setColor(mTextColor);
                 canvas.drawText(Integer.toString(level), textX, mTextY, mTextPaint);
             }
         }
