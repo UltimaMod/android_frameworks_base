@@ -417,6 +417,7 @@ implements OnItemClickListener, RecentsCallback,
                 Settings.Secure.PROTECTED_COMPONENTS);
         protectedComponents = protectedComponents == null ? "" : protectedComponents;
         return (protectedComponents.equals(""));
+    }
 
     private void setupClearAll(){
         int clearAllPosition = Settings.System.getInt(
